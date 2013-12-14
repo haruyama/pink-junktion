@@ -13,7 +13,10 @@ const (
 	URL_ELASTICSEARCH   = "http://localhost:9200/access_info/access_info"
 )
 
-func NewDBClient() DBClient {
+func NewDBClient(db string) DBClient {
+	if db == "elasticsearch" || db == "es" {
+		return NewESClient()
+	}
 	return NewSolrClient()
 }
 
@@ -24,19 +27,27 @@ func post(client DBClient, c chan int) {
 		client.Post()
 	}
 	c <- 1
+}
 
+var (
+	httperf bool
+	db      string
+)
+
+func init() {
+	flag.BoolVar(&httperf, "httperf", false, "httperf wsesslog mode")
+	flag.StringVar(&db, "db", "solr", "db type")
 }
 
 func main() {
 	rand.Seed(time.Now().UTC().UnixNano())
 
-	httperf := flag.Bool("httperf", false, "write httperf wsesslog")
 	flag.Parse()
 
-	client := NewDBClient()
+	client := NewDBClient(db)
 
-	if *httperf {
-		write_httperf_wsesslog(client)
+	if httperf {
+		WriteHttperfWsesslog(client)
 		return
 	}
 
